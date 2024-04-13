@@ -1,7 +1,7 @@
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
+import java.sql.*;
 import javax.swing.*;
 
 public class LoginForm extends JFrame {
@@ -11,7 +11,7 @@ public class LoginForm extends JFrame {
     JPasswordField pfPassword;
 
     public void initalize() { // initalize the form
-        // form panel
+        // create labels and text fields
         JLabel lbloginForm = new JLabel("Login Form", SwingConstants.CENTER);
         lbloginForm.setFont(mainFont);
 
@@ -30,6 +30,7 @@ public class LoginForm extends JFrame {
         // create form panel
         JPanel formPanel = new JPanel();
         formPanel.setLayout(new GridLayout(0,1,10,10));
+
         // add elements to panel
         formPanel.add(lbloginForm);
         formPanel.add(lbEmail);
@@ -41,19 +42,22 @@ public class LoginForm extends JFrame {
         btnLogin.setFont(mainFont);
         btnLogin.addActionListener(new ActionListener() {
             
+            // event listener for the login button
             @Override
             public void actionPerformed(ActionEvent e) {
+                // read email and password
                 String email = tfEmail.getText();
                 String password = String.valueOf(pfPassword.getPassword());
+                
+                // if user is found return data of that user. Otherwise return null.
+                User user = getAuthenticatedUser(email, password);
 
-                User user = getAuthenticateduser(email, password);
-
-                if (user!= null) {
-                    MainFrame MainFrame = new MainFrame();
+                if (user!= null) { // check if user data is found
+                    MainFrame mainFrame = new MainFrame();
                     mainFrame.initalize(user);
                     dispose();
                 }
-                else {
+                else { // display error message
                     JOptionPane.showMessageDialog(LoginForm.this,
                     "Email or Password Invalid",
                     "Try again",
@@ -63,19 +67,84 @@ public class LoginForm extends JFrame {
             }
         });
 
+        // create cancel button
+        JButton btnCancel = new JButton("Cancel");
+        btnCancel.setFont(mainFont);
+
+        // add listener for cancel button
+        btnCancel.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+            }
+        });
+
+        // create buttons panel
+        JPanel buttonsPanel = new JPanel();
+        buttonsPanel.setLayout(new GridLayout(1,2,10,0));
+
+        // add buttons to panel
+        buttonsPanel.add(btnLogin);
+        buttonsPanel.add(btnCancel);
+
+        // initalize the frame
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(formPanel, BorderLayout.NORTH);
+        mainPanel.add(buttonsPanel, BorderLayout.SOUTH);
 
         setTitle("Login Form");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE); // close form
         setSize(400,500); // set window size
         setMinimumSize(new Dimension(350,400)); // set window dimensions
         setLocationRelativeTo(null); // center window
-        setContentPane(formPanel); // set form panel as content pane
+        setContentPane(mainPanel); // set form panel as content pane
         setVisible(true); // make frame visible
         
     }
 
-public static void main(String[] args) {
-    LoginForm loginForm = new LoginForm();
-    loginForm.initalize();
+    private User getAuthenticatedUser(String email, String password) {
+        User user = null;
+
+        // connect to db
+        final String DB_URL = "jdbc:mysql://localhost:3306/loginusers";
+        final String USERNAME = "root";
+        final String PASSWORD = "";
+
+        try {
+            // establish conn with db
+            Connection conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            
+            String sql = "SELECT * FROM user WHERE email=? AND password=?";
+            // allows to excute sql query
+            PreparedStatement preparedStatement = conn.prepareStatement(sql);
+            preparedStatement.setString(1, email);
+            preparedStatement.setString(2, password);
+            // execute statement 
+            ResultSet resultSet = preparedStatement.executeQuery();
+            
+            // create user object if user is found
+            if (resultSet.next()) {
+                user = new User();
+                user.name = resultSet.getString("name");
+                user.email = resultSet.getString("email");
+                user.phone = resultSet.getString("phone");
+                user.address = resultSet.getString("address");
+                user.password = resultSet.getString("password");
+            }
+            // close conn with db
+            preparedStatement.close();
+            conn.close();
+        } catch (Exception e) {
+            System.out.println("Database conn failed");
+        }
+
+        // return user object
+        return user;
     }
+
+    public static void main(String[] args) {
+        LoginForm loginForm = new LoginForm();
+        loginForm.initalize();
+    }
+    
 }
