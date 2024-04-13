@@ -1,5 +1,6 @@
 import java.awt.*;
-
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.*;
 
@@ -35,6 +36,32 @@ public class LoginForm extends JFrame {
         formPanel.add(tfEmail);
         formPanel.add(lbPassword);
         formPanel.add(pfPassword);
+
+        JButton btnLogin = new JButton("Login");
+        btnLogin.setFont(mainFont);
+        btnLogin.addActionListener(new ActionListener() {
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String email = tfEmail.getText();
+                String password = String.valueOf(pfPassword.getPassword());
+
+                User user = getAuthenticateduser(email, password);
+
+                if (user!= null) {
+                    MainFrame MainFrame = new MainFrame();
+                    mainFrame.initalize(user);
+                    dispose();
+                }
+                else {
+                    JOptionPane.showMessageDialog(LoginForm.this,
+                    "Email or Password Invalid",
+                    "Try again",
+                    JOptionPane.ERROR_MESSAGE);
+                }
+
+            }
+        });
 
 
         setTitle("Login Form");
